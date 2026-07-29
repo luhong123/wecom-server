@@ -1,146 +1,122 @@
-# 企业微信回调服务器
+# 企业微信消息推送 + 回调服务
 
-基于 Flask + wechatpy 的企业微信消息回调服务。
+企业微信消息推送脚本 + 消息回调接收服务。
 
-## 功能
+## 场景说明
 
-- ✅ URL 验证（企业微信配置验证）
-- ✅ 消息接收与解密
-- ✅ 消息回复与加密
+```
+只主动推送消息 → 不需要回调服务，只用 sendmsg.sh 即可
+需要接收用户回复 → 回调地址必须一直运行
+```
 
-## 服务器部署
+---
 
-### 1. 克隆项目
+## 一、只推送消息（不需要回调）
+
+如果只需要给用户发消息，**不需要配置回调地址**，直接用 `sendmsg.sh` 即可。
+
+### 使用方式
 
 ```bash
-git clone https://github.com/luhong123/wecom-server.git
-cd wecom-server
-```
-
-### 2. 安装依赖
-
-```bash
-pip3 install -r requirements.txt
-```
-
-### 3. 启动服务
-
-前台运行（调试用）：
-```bash
-python3 app.py
-```
-
-后台运行：
-```bash
-nohup python3 app.py > wechat.log 2>&1 &
-```
-
-查看日志：
-```bash
-tail -f wechat.log
-```
-
-停止服务：
-```bash
-ps aux | grep app.py
-kill <进程ID>
-```
-
-### 4. 开放防火墙端口
-
-CentOS/RHEL：
-```bash
-firewall-cmd --add-port=80/tcp --permanent
-firewall-cmd --reload
-```
-
-Ubuntu/Debian：
-```bash
-ufw allow 80
-```
-
-## 企业微信配置
-
-登录企业微信管理后台 → 应用管理 → 自建应用 → 接收消息
-
-| 配置项 | 值 |
-|--------|-----|
-| URL | `http://你的公网IP:端口/wechat` |
-| Token | `sdSLE1Wn8HNJHDD83il1D` |
-| EncodingAESKey | `fS8tP76fJvWfCPQyYrsQUXnqgWR15nSLfc5HqYTnzis` |
-
-> 示例：`http://10.0.1.x:87/wechat`
-
-## 配置修改
-
-编辑 `app.py` 文件顶部的配置区：
-
-```python
-# ========== 配置区 ==========
-TOKEN = "你的Token"
-EncodingAESKey = "你的EncodingAESKey"
-CorpId = "你的企业ID"  # 可选
-# ============================
-```
-
-## 项目结构
-
-```
-wecom-server/
-├── app.py            # 主程序（回调服务）
-├── sendmsg.sh        # 消息发送脚本
-├── requirements.txt  # Python 依赖
-├── start.sh          # 启动脚本
-└── README.md         # 说明文档
-```
-
-## 发送消息
-
-使用 `sendmsg.sh` 脚本发送企业微信消息：
-
-```bash
-# 给所有人发送消息
 bash sendmsg.sh "你好，这是一条测试消息"
-
-# 给指定成员发送（需修改脚本中的 user 变量）
 ```
 
 ### 脚本配置
 
 编辑 `sendmsg.sh` 修改以下参数：
 
-| 参数 | 说明 |
-|------|------|
-| `corpid` | 企业ID |
-| `corpsecret` | 应用Secret |
-| `agentld` | 应用AgentId |
-| `user` | 接收成员，`@all` 为所有人 |
+| 参数 | 说明 | 获取方式 |
+|------|------|----------|
+| `corpid` | 企业ID | 企业微信后台 → 我的企业 |
+| `corpsecret` | 应用Secret | 应用管理 → 应用 → 查看Secret |
+| `agentld` | 应用AgentId | 应用管理 → 应用 → AgentId |
+| `user` | 接收成员 | `@all` 为所有人，或指定 UserID |
 
-> 获取方式：企业微信管理后台 → 应用管理 → 你的应用 → 查看详情
+### 依赖
+
+```bash
+# 需要 jq 命令解析 JSON
+apt install jq -y      # Ubuntu/Debian
+yum install jq -y      # CentOS
+```
+
+---
+
+## 二、需要接收用户回复（需要回调服务）
+
+如果需要在应用里接收用户发送的消息，必须部署回调服务。
+
+### 回调服务部署
+
+```bash
+# 1. 安装依赖
+pip3 install -r requirements.txt
+
+# 2. 启动服务（前台测试）
+python3 app.py
+
+# 3. 后台运行
+nohup python3 app.py > wechat.log 2>&1 &
+```
+
+### 防火墙
+
+```bash
+# Ubuntu/Debian
+ufw allow 87
+
+# CentOS
+firewall-cmd --add-port=87/tcp --permanent
+firewall-cmd --reload
+```
+
+### 企业微信配置
+
+登录后台 → 应用管理 → 自建应用 → 接收消息
+
+| 配置项 | 值 |
+|--------|-----|
+| URL | `http://你的公网IP:87/wechat` |
+| Token | `sdSLE1Wn8HNJHDD83il1D` |
+| EncodingAESKey | `fS8tP76fJvWfCPQyYrsQUXnqgWR15nSLfc5HqYTnzis` |
+
+> 示例：`http://10.0.1.x:87/wechat`
+
+### 配置修改
+
+编辑 `app.py` 顶部配置区：
+
+```python
+TOKEN = "你的Token"
+EncodingAESKey = "你的EncodingAESKey"
+```
+
+---
+
+## 项目结构
+
+```
+wecom-server/
+├── app.py            # 回调服务（接收用户消息）
+├── sendmsg.sh        # 消息推送脚本（主动发消息）
+├── requirements.txt  # Python 依赖
+└── README.md         # 说明文档
+```
 
 ## 常见问题
 
-### Q: 验证 URL 失败？
+### 验证 URL 失败？
 
-1. 检查服务是否启动：`curl http://localhost/wechat`
-2. 检查防火墙是否开放 80 端口
-3. 检查云服务商安全组是否放行 80 端口
+1. 检查服务是否启动：`curl http://localhost:87/wechat`
+2. 检查防火墙是否开放端口
+3. 检查云服务商安全组是否放行
 
-### Q: 如何修改端口？
+### 如何开机自启？
 
-编辑 `app.py` 最后一行：
-```python
-app.run(host="0.0.0.0", port=8080, debug=False)  # 改为 8080
-```
-
-### Q: 如何开机自启？
-
-创建 systemd 服务：
 ```bash
 sudo nano /etc/systemd/system/wecom.service
 ```
 
-内容：
 ```ini
 [Unit]
 Description=WeChat Work Callback Server
@@ -157,7 +133,6 @@ Restart=always
 WantedBy=multi-user.target
 ```
 
-启用：
 ```bash
 sudo systemctl daemon-reload
 sudo systemctl enable wecom
