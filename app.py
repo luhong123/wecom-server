@@ -24,7 +24,10 @@ def verify_signature(signature, timestamp, nonce):
     """验证企业微信签名"""
     params = [TOKEN, timestamp, nonce]
     params.sort()
-    calc = hashlib.sha1("".join(params).encode()).hexdigest()
+    sorted_str = "".join(params)
+    calc = hashlib.sha1(sorted_str.encode()).hexdigest()
+    print(f"Token: {TOKEN}")
+    print(f"排序后字符串: {sorted_str}")
     print(f"签名验证: 计算={calc}, 接收={signature}")
     return calc == signature
 
