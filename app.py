@@ -2,7 +2,6 @@
 """
 企业微信回调服务器
 """
-import os
 import hashlib
 import base64
 import struct
@@ -12,44 +11,34 @@ from Crypto.Cipher import AES
 # ========== 配置区 ==========
 TOKEN = "sdSLE1Wn8HNJHDD83il1D"
 EncodingAESKey = "fS8tP76fJvWfCPQyYrsQUXnqgWR15nSLfc5HqYTnzis"
-CorpId = ""  # 企业ID（可选）
 # ============================
 
 app = Flask(__name__)
 
-
-class WeComCrypto:
-    """企业微信加解密"""
-
-    def __init__(self, token, encoding_aes_key, corp_id=""):
-        self.token = token
-        self.corp_id = corp_id
-        # AES Key: base64解码，补齐 '='
-        aes_key = encoding_aes_key + "=" if len(encoding_aes_key) % 4 else encoding_aes_key
-        self.key = base64.b64decode(aes_key)
-        self.iv = self.key[:16]
-
-    def verify_signature(self, signature, timestamp, nonce):
-        """验证签名"""
-        params = [self.token, timestamp, nonce]
-        params.sort()
-        sha1 = hashlib.sha1("".join(params).encode()).hexdigest()
-        return sha1 == signature
-
-    def decrypt(self, echostr):
-        """解密 echostr"""
-        cipher = AES.new(self.key, AES.MODE_CBC, self.iv)
-        decrypted = cipher.decrypt(base64.b64decode(echostr))
-        # 去除 PKCS7 补位
-        pad = decrypted[-1]
-        content = decrypted[16:-pad]
-        # 解析: 4字节长度 + 内容 + corp_id
-        msg_len = struct.unpack(">I", content[:4])[0]
-        msg = content[4:4+msg_len].decode('utf-8')
-        return msg
+# AES Key
+AES_KEY = base64.b64decode(EncodingAESKey + "=")
+IV = AES_KEY[:16]
 
 
-crypto = WeComCrypto(TOKEN, EncodingAESKey, CorpId)
+def verify_signature(signature, timestamp, nonce):
+    """验证企业微信签名"""
+    params = [TOKEN, timestamp, nonce]
+    params.sort()
+    calc = hashlib.sha1("".join(params).encode()).hexdigest()
+    print(f"签名验证: 计算={calc}, 接收={signature}")
+    return calc == signature
+
+
+def decrypt_echostr(echostr):
+    """解密 echostr"""
+    cipher = AES.new(AES_KEY, AES.MODE_CBC, IV)
+    decrypted = cipher.decrypt(base64.b64decode(echostr))
+    # 去除 PKCS7 补位
+    pad = decrypted[-1]
+    content = decrypted[16:-pad]
+    # 解析: 4字节长度 + 内容
+    msg_len = struct.unpack(">I", content[:4])[0]
+    return content[4:4+msg_len].decode('utf-8')
 
 
 @app.route("/")
@@ -63,29 +52,30 @@ def wechat():
     signature = request.args.get("msg_signature", "")
     timestamp = request.args.get("timestamp", "")
     nonce = request.args.get("nonce", "")
+    echostr = request.args.get("echostr", "")
 
-    # GET: 验证URL
+    print(f"收到请求: path={request.path}, signature={signature}, timestamp={timestamp}, nonce={nonce}")
+
     if request.method == "GET":
-        # 调试日志
-        calc_sig = hashlib.sha1("".join(sorted([TOKEN, timestamp, nonce])).encode()).hexdigest()
-        print(f"签名对比: 计算={calc_sig}, 接收={signature}, timestamp={timestamp}, nonce={nonce}")
-
-        if not crypto.verify_signature(signature, timestamp, nonce):
+        # 验证签名
+        if not verify_signature(signature, timestamp, nonce):
             print("签名验证失败!")
             abort(403)
 
-        echo_str = request.args.get("echostr", "")
-        if echo_str:
+        # 解密并返回
+        if echostr:
             try:
-                return crypto.decrypt(echo_str)
+                result = decrypt_echostr(echostr)
+                print(f"解密成功: {result}")
+                return result
             except Exception as e:
                 print(f"解密失败: {e}")
                 abort(500)
         return "ok"
 
-    # POST: 接收消息（暂不处理）
+    # POST: 接收消息
     return "success"
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=80, debug=False)
+    app.run(host="0.0.0.0", port=80, debug=True)
