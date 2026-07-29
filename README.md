@@ -65,9 +65,11 @@ ufw allow 80
 
 | 配置项 | 值 |
 |--------|-----|
-| URL | `http://你的公网IP/wechat` |
+| URL | `http://你的公网IP:端口/wechat` |
 | Token | `sdSLE1Wn8HNJHDD83il1D` |
 | EncodingAESKey | `fS8tP76fJvWfCPQyYrsQUXnqgWR15nSLfc5HqYTnzis` |
+
+> 示例：`http://14.17.107.52:87/wechat`
 
 ## 配置修改
 
