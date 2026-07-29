@@ -69,7 +69,7 @@ ufw allow 80
 | Token | `sdSLE1Wn8HNJHDD83il1D` |
 | EncodingAESKey | `fS8tP76fJvWfCPQyYrsQUXnqgWR15nSLfc5HqYTnzis` |
 
-> 示例：`http://14.17.107.52:87/wechat`
+> 示例：`http://10.0.1.x:87/wechat`
 
 ## 配置修改
 
