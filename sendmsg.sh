@@ -9,8 +9,7 @@ agentld=1000002
 msg=$1
 
 A=$(curl -s "https://qyapi.weixin.qq.com/cgi-bin/gettoken?corpid=$corpid&corpsecret=$corpsecret")
-token=$(echo $A | jq -c '.access_token')
-token=${token%*\"}
+token=$(echo $A | jq -r '.access_token')
 
 URL="https://qyapi.weixin.qq.com/cgi-bin/message/send?access_token=$token"
 
