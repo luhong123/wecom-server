@@ -66,7 +66,12 @@ def wechat():
 
     # GET: 验证URL
     if request.method == "GET":
+        # 调试日志
+        calc_sig = hashlib.sha1("".join(sorted([TOKEN, timestamp, nonce])).encode()).hexdigest()
+        print(f"签名对比: 计算={calc_sig}, 接收={signature}, timestamp={timestamp}, nonce={nonce}")
+
         if not crypto.verify_signature(signature, timestamp, nonce):
+            print("签名验证失败!")
             abort(403)
 
         echo_str = request.args.get("echostr", "")
