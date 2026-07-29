@@ -20,9 +20,13 @@ AES_KEY = base64.b64decode(EncodingAESKey + "=")
 IV = AES_KEY[:16]
 
 
-def verify_signature(signature, timestamp, nonce):
-    """验证企业微信签名"""
-    params = [TOKEN, timestamp, nonce]
+def verify_signature(signature, timestamp, nonce, echostr=""):
+    """验证企业微信签名
+
+    企业微信URL验证(GET): sha1(sort(token, timestamp, nonce, echostr))
+    企业微信消息回调(POST): sha1(sort(token, timestamp, nonce, encrypt))
+    """
+    params = [TOKEN, timestamp, nonce, echostr] if echostr else [TOKEN, timestamp, nonce]
     params.sort()
     sorted_str = "".join(params)
     calc = hashlib.sha1(sorted_str.encode()).hexdigest()
@@ -60,8 +64,8 @@ def wechat():
     print(f"收到请求: path={request.path}, signature={signature}, timestamp={timestamp}, nonce={nonce}")
 
     if request.method == "GET":
-        # 验证签名
-        if not verify_signature(signature, timestamp, nonce):
+        # 验证签名（URL验证时需包含echostr）
+        if not verify_signature(signature, timestamp, nonce, echostr):
             print("签名验证失败!")
             abort(403)
 
