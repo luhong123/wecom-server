@@ -87,11 +87,36 @@ CorpId = "你的企业ID"  # 可选
 
 ```
 wecom-server/
-├── app.py            # 主程序
+├── app.py            # 主程序（回调服务）
+├── sendmsg.sh        # 消息发送脚本
 ├── requirements.txt  # Python 依赖
 ├── start.sh          # 启动脚本
 └── README.md         # 说明文档
 ```
+
+## 发送消息
+
+使用 `sendmsg.sh` 脚本发送企业微信消息：
+
+```bash
+# 给所有人发送消息
+bash sendmsg.sh "你好，这是一条测试消息"
+
+# 给指定成员发送（需修改脚本中的 user 变量）
+```
+
+### 脚本配置
+
+编辑 `sendmsg.sh` 修改以下参数：
+
+| 参数 | 说明 |
+|------|------|
+| `corpid` | 企业ID |
+| `corpsecret` | 应用Secret |
+| `agentld` | 应用AgentId |
+| `user` | 接收成员，`@all` 为所有人 |
+
+> 获取方式：企业微信管理后台 → 应用管理 → 你的应用 → 查看详情
 
 ## 常见问题
 
